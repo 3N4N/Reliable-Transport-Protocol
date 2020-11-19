@@ -148,12 +148,12 @@ void A_init(void)
     A_tint = 15;
 }
 
-void send_ack(int AorB, int ack)
+void send_ack(int ack)
 {
     struct pkt packet;
     packet.acknum = ack;
     packet.checksum = get_checksum(&packet);
-    tolayer3(AorB, packet);
+    tolayer3(1, packet);
 }
 
 /* Note that with simplex transfer from a-to-B, there is no B_output() */
@@ -162,20 +162,20 @@ void B_input(struct pkt packet)
 {
     if (packet.checksum != get_checksum(&packet)) {
         printf("  B_input: Packet corrupted. Send NACK.\n");
-        send_ack(1, 1 - B_seq);
+        send_ack(1 - B_seq);
         return;
     }
 
     if (packet.seqnum != B_seq) {
         printf("  B_input: Not the expected SEQ. Send NACK.\n");
-        send_ack(1, 1 - B_seq);
+        send_ack(1 - B_seq);
         return;
     }
 
     printf("  B_input: Message received: %s\n", packet.payload);
 
     printf("  B_input: Send ACK.\n");
-    send_ack(1, B_seq);
+    send_ack(B_seq);
 
     tolayer5(1, packet.payload);
     B_seq = 1 - B_seq;
