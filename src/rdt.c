@@ -59,6 +59,10 @@ struct pkt A_lastpkt;
 
 int B_seq;
 
+int inv_seq(int seq) {
+    return ((1 & seq) ^ 1);
+}
+
 int get_checksum(struct pkt *packet) {
     int checksum = 0;
     checksum += packet->seqnum;
@@ -122,7 +126,7 @@ void A_input(struct pkt packet)
 
     /* get ready for sendig next message */
     stoptimer(0);
-    A_seq = 1 - A_seq;
+    A_seq = inv_seq(A_seq);
     A_state = WAIT_LAYER5;
 }
 
@@ -162,13 +166,13 @@ void B_input(struct pkt packet)
 {
     if (packet.checksum != get_checksum(&packet)) {
         printf("  B_input: Packet corrupted. Send NACK.\n");
-        send_ack(1 - B_seq);
+        send_ack(inv_seq(B_seq));
         return;
     }
 
     if (packet.seqnum != B_seq) {
         printf("  B_input: Not the expected SEQ. Send NACK.\n");
-        send_ack(1 - B_seq);
+        send_ack(inv_seq(B_seq));
         return;
     }
 
@@ -178,7 +182,7 @@ void B_input(struct pkt packet)
     send_ack(B_seq);
 
     tolayer5(1, packet.payload);
-    B_seq = 1 - B_seq;
+    B_seq = inv_seq(B_seq);
 }
 
 /* called when B's timer goes off */
