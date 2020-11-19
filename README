@@ -1,1 +1,191 @@
-# Reliable Transport Protocol
+Reliable Transport Protocol
+===========================
+
+This is an assignment for Level-3/Term-2.
+
+
+Overview
+--------
+
+The objective is to write the sending and receiving transport-level (i.e.,
+layer 4) code for a simple reliable data transfer protocol. The protocol
+used is alternating bit protocol (i.e., stop-and-wait protocol).
+
+Only unidirectional transfer of data is required. Of course, the receiving
+side will have to send packets to A to acknowledge (positively or
+negatively) receipt of data.
+
+In this implementation, the sending side is called A and the receiving side
+is called B.
+
+
+The Structures Used
+-------------------
+
+- msg: The data unit passed from layer 5 to layer 4. It contains the data
+  to be delivered to layer 5 via the transport level protocol entities.
+- pkt: The data unit passed from layer 4 to layer 3.
+
+
+The Routines to Implement
+-------------------------
+
+- [ ] A_output(message)
+
+    Where message is a structure of type msg, containing data to be sent to
+    the B-side.
+
+    This routine will be called whenever the upper layer at the sending
+    side (A) has a message to send. It is the job of the RDT protocol to
+    ensure that the data in such a message is delivered in-order, and
+    correctly, to the receiving side upper layer.
+
+- [ ] A_input(packet)
+
+    Where packet is a structure of type pkt.
+
+    This routine will be called whenever a packet sent from B-side (i.e.,
+    as a result of a tolayer3() being done by a B-side procedure) arrives
+    at the A-side.
+
+    packet is the (possibly corrupted) packet sent from B-side.
+
+- [ ] A_timerinterrupt()
+
+    This routine will be called when A's timer expires (thus generating a
+    timer interrupt).
+
+    Used to control the retransmission of packets. See starttimer() and
+    stoptimer() below for how the timer is started and stopped.
+
+- [ ] A-init()
+
+    This routine will be called once, before any of the other A-side
+    routines are called. It can be used to do any required initialization.
+
+- [ ] B_input(packet)
+
+    Where packet is a structure of type pkt.
+
+    This routine will be called whenever a packet sent from the A-side
+    (i.e., as a result of a tolayer3() being done by a A-side procedure)
+    arrives at the B-side.
+
+    packet is the (possibly corrupted) packet sent from A-side.
+
+- [ ] B_init()
+
+    This routine will be called once, before any of the other B-side
+    routines are called. It can be used to do any required initialization.
+
+
+Software Interfaces
+-------------------
+
+The following interfaces are implemented already.
+
+- starttimer(calling_entity, increment)
+
+    Where calling_entity is either 0 (for starting the A-side timer) or 1
+    (for starting the B-side timer), and increment is a float value
+    indicating the amount of time that will pass before the timer
+    interrupts.
+
+    A's timer should only be started (or stopped) by A-side routines, and
+    similarly for the B-side timer.
+
+    To give an idea of the appropriate increment value to use: a packet
+    sent into the network takes an average of 5 time units to arrive at the
+    other side when there are no other messages in the medium.
+
+- stoptimer(calling_entity)
+
+    Where calling_entity is either 0 (for stopping the A-side timer) or 1
+    (for stopping the B-side timer).
+
+- tolayer3(calling_entity, packet)
+
+    Where calling_entity is either 0 (for the A-side send) or 1 (for the
+    B-side send), and packet is a structure of type pkt.
+
+    Calling this routine will cause the packet to be sent into the network,
+    destined for the other entity.
+
+- tolayer5(calling_entity, message)
+
+    Where calling_entity is either 0 (for the A-side send) or 1 (for the
+    B-side send), and message is a structure of type msg.
+
+    With unidirectional data transfer, calling_entity is always be equal to
+    1 (delivery to the B-side).
+
+    Calling this routine will cause data to be passed to layer 5.
+
+
+The Simulated Network Environment
+---------------------------------
+
+A call to procedure tolayer3() sends packets into the medium (i.e., into
+the network layer). The procedures A_input() and B_input() are called when
+a packet is to be delivered from the medium to the protocol layer.
+
+The medium is capable of corrupting and losing packets. It will not reorder
+packets. At runtime, user will be asked to specify values regarding the
+simulated network environment:
+
+- Number of messages to simulate
+
+    The emulator will stop after this number of messages have been
+    transmitted from entity (A) to entity (B).
+
+- Loss
+
+    The probability of a packet being lost. A values of 0.1 would mean that
+    one in ten packets (on average) are lost.
+
+- Corruption
+
+    The probability of a packet being corrupted. A value of 0.2 would mean
+    that one in five packets (on average) are corrupted.
+
+    Note: the contents of payload, sequence, ack, or checksum fields
+    can be corrupted. The checksum should include the data, sequence, and
+    ack fields.
+
+- Tracing
+
+    - A tracing value of 1 or 2 will print out useful information about
+      what is going on inside the emulation (e.g., what's happening to
+      packets and timers).
+
+    - A tracing value of 0 will turn this off.
+
+    - A tracing value greater than 2 will display all sorts of odd messages
+      that are for emulator-debugging purposes.
+
+- Average time between messages from sender's layer5
+
+    Set this value to any non-zero positive value. Note that the smaller
+    the value, the faster packets will be arriving at the sender.
+
+
+Implementation of Alternating-Bit-Protocol
+------------------------------------------
+
+The procedures A_output(), A_input(), A_timerinterrupt(), A_init(),
+B_input(), and B_init() together implement a stop-and-wait (i.e., the
+alternating bit protocol) unidirectional transfer of data from the A-side
+to the B-side.
+
+Use both ACK and NACK messages. Since there is no type field in the packet,
+NACK has to be implemented as by sending ACK again for the last correctly
+received packet.
+
+Choose a very large number for the average time between messages from
+sender’s layer5, so that the sender is never called while it still has an
+outstanding, unacknowledged message it is trying to send to the receiver.
+I’d suggest a value of 1000.
+
+Perform a check in the sender to make sure that when A_output() is called,
+there is no message currently in transit. If there is, simply ignore (drop)
+the data being passed to the A_output() routine.
