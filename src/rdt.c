@@ -47,10 +47,52 @@ void tolayer5(int AorB, char datasent[20]);
 
 /********* STUDENTS WRITE THE NEXT SEVEN ROUTINES *********/
 
+enum State {
+    WAIT_LAYER5,
+    WAIT_ACK
+};
+
+enum State A_state;
+int A_seq;
+float A_tint;
+struct pkt A_lastpkt;
+
+int B_seq;
+
+int get_checksum(struct pkt *packet)
+{
+    int checksum = 0;
+    checksum += packet->seqnum;
+    checksum += packet->acknum;
+    for (int i = 0; i < 20; ++i)
+        checksum += packet->payload[i];
+    return checksum;
+}
+
 /* called from layer 5, passed the data to be sent to other side */
 void A_output(struct msg message)
 {
+    if (A_state != WAIT_LAYER5) {
+        printf("  A_output: Drop the message. ACK not received.\n");
+        return;
+    }
 
+    printf("  A_output: Packet sending: %s.\n", message.data);
+
+    /* create a packet to send B */
+    struct pkt packet;
+    packet.seqnum = A_seq;
+    packet.acknum = -1;
+    packet.checksum = get_checksum(&packet);
+    memmove(packet.payload, message.data, 20);
+
+    /* send the packet to B */
+    A_lastpkt = packet;
+    A_state = WAIT_ACK;
+    tolayer3(0, packet);
+    starttimer(0, A_tint);
+
+    printf("  A_output: Packet sent: %s.\n", message.data);
 }
 
 /* need be completed only for extra credit */
@@ -62,28 +104,82 @@ void B_output(struct msg message)
 /* called from layer 3, when a packet arrives for layer 4 */
 void A_input(struct pkt packet)
 {
+    if (A_state != WAIT_ACK) {
+        printf("  A_input: Packet dropped. Unidirectional only.\n");
+        return;
+    }
 
+    if (packet.checksum != get_checksum(&packet)) {
+        printf("  A_input: Packet dropped. Corruption.\n");
+        return;
+    }
+
+    if (packet.acknum != A_seq) {
+        printf("  A_input: Packet dropped. Not the expected ACK.\n");
+        return;
+    }
+
+    printf("  A_input: ACK received.\n");
+
+    /* get ready for sendig next message */
+    stoptimer(0);
+    A_seq = 1 - A_seq;
+    A_state = WAIT_LAYER5;
 }
 
 /* called when A's timer goes off */
 void A_timerinterrupt(void)
 {
+    if (A_state != WAIT_ACK) {
+        printf("  A_timerinterrupt: Ignored. Not waiting for ACK.\n");
+        return;
+    }
 
+    printf("  A_timerinterrupt: Resend last packet: %s.\n", A_lastpkt.payload);
+    tolayer3(0, A_lastpkt);
+    starttimer(0, A_tint);
 }
 
 /* the following routine will be called once (only) before any other */
 /* entity A routines are called. You can use it to do any initialization */
 void A_init(void)
 {
+    A_state = WAIT_LAYER5;
+    A_seq = 0;
+    A_tint = 15;
+}
 
+void send_ack(int AorB, int ack)
+{
+    struct pkt packet;
+    packet.acknum = ack;
+    packet.checksum = get_checksum(&packet);
+    tolayer3(AorB, packet);
 }
 
 /* Note that with simplex transfer from a-to-B, there is no B_output() */
-
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
 {
+    if (packet.checksum != get_checksum(&packet)) {
+        printf("  B_input: Packet corrupted. Send NACK.\n");
+        send_ack(1, 1 - B_seq);
+        return;
+    }
 
+    if (packet.seqnum != B_seq) {
+        printf("  B_input: Not the expected SEQ. Send NACK.\n");
+        send_ack(1, 1 - B_seq);
+        return;
+    }
+
+    printf("  B_input: Message received: %s\n", packet.payload);
+
+    printf("  B_input: Send ACK.\n");
+    send_ack(1, B_seq);
+
+    tolayer5(1, packet.payload);
+    B_seq = 1 - B_seq;
 }
 
 /* called when B's timer goes off */
@@ -96,8 +192,9 @@ void B_timerinterrupt(void)
 /* entity B routines are called. You can use it to do any initialization */
 void B_init(void)
 {
-
+    B_seq = 0;
 }
+
 
 /*****************************************************************
 ***************** NETWORK EMULATION CODE STARTS BELOW ***********
