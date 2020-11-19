@@ -59,8 +59,7 @@ struct pkt A_lastpkt;
 
 int B_seq;
 
-int get_checksum(struct pkt *packet)
-{
+int get_checksum(struct pkt *packet) {
     int checksum = 0;
     checksum += packet->seqnum;
     checksum += packet->acknum;
@@ -83,8 +82,8 @@ void A_output(struct msg message)
     struct pkt packet;
     packet.seqnum = A_seq;
     packet.acknum = -1;
-    packet.checksum = get_checksum(&packet);
     memmove(packet.payload, message.data, 20);
+    packet.checksum = get_checksum(&packet);
 
     /* send the packet to B */
     A_lastpkt = packet;
