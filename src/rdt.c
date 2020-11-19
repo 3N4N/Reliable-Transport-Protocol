@@ -256,6 +256,10 @@ void init();
 void generate_next_arrival(void);
 void insertevent(struct event *p);
 
+#define WRITE_DOC 0
+
+FILE *fp;
+
 int main()
 {
     struct event *eventptr;
@@ -346,6 +350,8 @@ terminate:
     printf(
         " Simulator terminated at time %f\n after sending %d msgs from layer5\n",
         time, nsim);
+
+    if (WRITE_DOC == 1) fclose(fp);
 }
 
 void init() /* initialize the simulator */
@@ -366,6 +372,21 @@ void init() /* initialize the simulator */
     scanf("%f",&lambda);
     printf("Enter TRACE:");
     scanf("%d",&TRACE);
+
+    /* nsimmax     = 10; */
+    /* lossprob    = 0.1; */
+    /* corruptprob = 0.3; */
+    /* lambda      = 1000; */
+    /* TRACE       = 2; */
+
+    if (WRITE_DOC == 1) fp = freopen("report.doc", "w+", stdout);
+
+    printf("\n\n");
+    printf("The number of messages to simulate: %d\n", nsimmax);
+    printf("Packet loss probability: %f\n", lossprob);
+    printf("Packet corruption probability: %f\n", corruptprob);
+    printf("Average time between messages from sender's layer5: %f\n", lambda);
+    printf("TRACE: %d\n", TRACE);
 
     srand(9999); /* init random number generator */
     sum = 0.0;   /* test random number generator for students */
