@@ -30,7 +30,7 @@ The Structures Used
 The Routines to Implement
 -------------------------
 
-- [ ] A_output(message)
+- [x] A_output(message)
 
     Where message is a structure of type msg, containing data to be sent to
     the B-side.
@@ -40,7 +40,7 @@ The Routines to Implement
     ensure that the data in such a message is delivered in-order, and
     correctly, to the receiving side upper layer.
 
-- [ ] A_input(packet)
+- [x] A_input(packet)
 
     Where packet is a structure of type pkt.
 
@@ -50,7 +50,7 @@ The Routines to Implement
 
     packet is the (possibly corrupted) packet sent from B-side.
 
-- [ ] A_timerinterrupt()
+- [x] A_timerinterrupt()
 
     This routine will be called when A's timer expires (thus generating a
     timer interrupt).
@@ -58,12 +58,12 @@ The Routines to Implement
     Used to control the retransmission of packets. See starttimer() and
     stoptimer() below for how the timer is started and stopped.
 
-- [ ] A-init()
+- [x] A-init()
 
     This routine will be called once, before any of the other A-side
     routines are called. It can be used to do any required initialization.
 
-- [ ] B_input(packet)
+- [x] B_input(packet)
 
     Where packet is a structure of type pkt.
 
@@ -73,7 +73,7 @@ The Routines to Implement
 
     packet is the (possibly corrupted) packet sent from A-side.
 
-- [ ] B_init()
+- [x] B_init()
 
     This routine will be called once, before any of the other B-side
     routines are called. It can be used to do any required initialization.
