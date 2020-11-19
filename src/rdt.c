@@ -63,12 +63,19 @@ int inv_seq(int seq) {
     return ((1 & seq) ^ 1);
 }
 
+/*
+ * Returns the summation of the int values
+ * of all members
+ */
 int get_checksum(struct pkt *packet) {
     int checksum = 0;
     checksum += packet->seqnum;
     checksum += packet->acknum;
-    for (int i = 0; i < 20; ++i)
+
+    int i;
+    for (i = 0; i < 20; ++i)
         checksum += packet->payload[i];
+
     return checksum;
 }
 
@@ -76,11 +83,9 @@ int get_checksum(struct pkt *packet) {
 void A_output(struct msg message)
 {
     if (A_state != WAIT_LAYER5) {
-        printf("  A_output: Drop the message. ACK not received.\n");
+        printf("  A_output: Message dropped. ACK not yet received.\n");
         return;
     }
-
-    printf("  A_output: Packet sending: %s.\n", message.data);
 
     /* create a packet to send B */
     struct pkt packet;
@@ -149,7 +154,7 @@ void A_init(void)
 {
     A_state = WAIT_LAYER5;
     A_seq = 0;
-    A_tint = 15;
+    A_tint = 25;
 }
 
 void send_ack(int ack)
@@ -350,6 +355,7 @@ void init() /* initialize the simulator */
     float jimsrand();
 
     printf("-----  Stop and Wait Network Simulator Version 1.1 -------- \n\n");
+
     printf("Enter the number of messages to simulate: ");
     scanf("%d",&nsimmax);
     printf("Enter  packet loss probability [enter 0.0 for no loss]:");
