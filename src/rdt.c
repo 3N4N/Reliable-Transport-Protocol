@@ -59,8 +59,10 @@ struct pkt A_lastpkt;
 
 int B_seq;
 
-int inv_seq(int seq) {
-    return ((1 & seq) ^ 1);
+int inc_seq(int seq) {
+    /* Since the sequence is alternating
+     * it can have only two values: 0 and 1. */
+    return 1 - seq;
 }
 
 /*
@@ -131,7 +133,7 @@ void A_input(struct pkt packet)
 
     /* get ready for sendig next message */
     stoptimer(0);
-    A_seq = inv_seq(A_seq);
+    A_seq = inc_seq(A_seq);
     A_state = WAIT_LAYER5;
 }
 
@@ -171,13 +173,13 @@ void B_input(struct pkt packet)
 {
     if (packet.checksum != get_checksum(&packet)) {
         printf("  B_input: Packet corrupted. Send NACK.\n");
-        send_ack(inv_seq(B_seq));
+        send_ack(inc_seq(B_seq));
         return;
     }
 
     if (packet.seqnum != B_seq) {
         printf("  B_input: Not the expected SEQ. Send NACK.\n");
-        send_ack(inv_seq(B_seq));
+        send_ack(inc_seq(B_seq));
         return;
     }
 
@@ -187,7 +189,7 @@ void B_input(struct pkt packet)
     send_ack(B_seq);
 
     tolayer5(1, packet.payload);
-    B_seq = inv_seq(B_seq);
+    B_seq = inc_seq(B_seq);
 }
 
 /* called when B's timer goes off */
